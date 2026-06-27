@@ -14,7 +14,6 @@ build
 .cache
 .DS_Store
 .VSCodeCounter
-app
 assembly.txt
 .vscode
 assembly.txt
