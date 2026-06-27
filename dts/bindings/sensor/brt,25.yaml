@@ -1,0 +1,21 @@
+description: BRITER BRT Absolute CAN Encoder
+
+compatible: "brt,25"
+
+include: base.yaml
+
+properties:
+  can-bus:
+    type: phandle
+    required: true
+    description: "Pointer to the CAN bus node (e.g., <&can1>)"
+
+  can-id:
+    type: int
+    required: true
+    description: "The CAN ID configured for this encoder via the PC software (e.g., 1, 2, 3, 4)"
+
+  resolution:
+    type: int
+    required: true
+    description: "Resolution per revolution (e.g., 1024 for 10-bit, 16384 for 14-bit)"

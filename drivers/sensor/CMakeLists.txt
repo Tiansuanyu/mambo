@@ -1,2 +1,3 @@
 add_subdirectory_ifdef(CONFIG_PAW3395 paw3395)
 add_subdirectory_ifdef(CONFIG_WIT_HWT906 WIT_HWT906)
+add_subdirectory_ifdef(CONFIG_BRT25 brt25)

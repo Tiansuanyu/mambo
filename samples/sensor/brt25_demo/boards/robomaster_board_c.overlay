@@ -1,0 +1,13 @@
+/ {
+	brt_encoders {
+		compatible = "simple-bus";
+
+		brt_encoder1: brt_encoder1 {
+			compatible = "brt,25";
+			status = "okay";
+				can-bus = <&can1>;
+				can-id = <1>;
+				resolution = <1024>;
+		};
+	};
+};

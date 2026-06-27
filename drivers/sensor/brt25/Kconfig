@@ -1,0 +1,6 @@
+config BRT25
+	bool "BRT25 Absolute CAN Encoder"
+	select CAN
+	help
+	  Enable driver for the BRT series absolute CAN encoders.
+	  These encoders communicate via CAN bus and provide absolute angular position.
