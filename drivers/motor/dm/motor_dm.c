@@ -304,22 +304,32 @@ int dm_set(const struct device *dev, motor_status_t *status)
 	struct dm_motor_data *data = dev->data;
 	const struct dm_motor_config *cfg = dev->config;
 
-	if (status->mode == MIT) {
-		data->target_angle = status->angle/(RAD2DEG);
+	/* Interpret the incoming setpoint by the motor's *configured* mode
+	 * (set once via motor_set_mode), not the transient mode tag that the
+	 * generic motor_set_* helpers attach. DM's hardware mode is sticky
+	 * (changed by a register write), so common.mode is the single source of
+	 * truth -- and it is the same field dm_motor_pack() switches on, so the
+	 * two stay consistent. This lets any generic caller (motor_set_speed,
+	 * motor_set_vo, ...) drive the motor without the driver caring which
+	 * macro was used. */
+	switch (data->common.mode) {
+	case MIT:
+		data->target_angle = status->angle / (RAD2DEG);
 		data->target_radps = RPM2RADPS(status->rpm);
 		data->target_torque = status->torque;
-		// data->params.k_p = 0;
-		// data->params.k_d = 0;
-	} else if (status->mode == PV) {
+		break;
+	case PV:
 		data->target_angle = status->angle;
 		data->target_radps = RPM2RADPS(status->rpm);
-	} else if (status->mode == VO) {
+		break;
+	case VO:
 		data->target_radps = RPM2RADPS(status->rpm);
 		data->target_angle = 0;
 		data->target_torque = 0;
 		data->params.k_p = 0;
 		data->params.k_d = 0;
-	} else {
+		break;
+	default:
 		return -ENOSYS;
 	}
 
