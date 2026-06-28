@@ -578,31 +578,35 @@ static float smooth_sign(float value, float deadband)
 	return value / deadband;
 }
 
-static void apply_friction_compensation(const struct dji_motor_config *config,
-					struct dji_motor_data *data)
+static float apply_friction_compensation(const struct dji_motor_config *config,
+					 struct dji_motor_data *data)
 {
+	float torque_out = data->target_torque;
+
 	if (config->friction_ff_pos == 0.0f && config->friction_ff_neg == 0.0f &&
 	    config->torque_lpf == 0.0f) {
-		data->filtered_target_torque = data->target_torque;
-		return;
+		data->filtered_target_torque = torque_out;
+		return torque_out;
 	}
 
 	float sign = smooth_sign(data->target_rpm, config->friction_ff_deadband_rpm);
 
 	if (sign > 0.0f) {
-		data->target_torque += config->friction_ff_pos * sign;
+		torque_out += config->friction_ff_pos * sign;
 	} else if (sign < 0.0f) {
-		data->target_torque += config->friction_ff_neg * (-sign);
+		torque_out += config->friction_ff_neg * (-sign);
 	}
 
 	if (config->torque_lpf > 0.0f && config->torque_lpf < 1.0f) {
 		data->filtered_target_torque =
 			config->torque_lpf * data->filtered_target_torque +
-			(1.0f - config->torque_lpf) * data->target_torque;
-		data->target_torque = data->filtered_target_torque;
+			(1.0f - config->torque_lpf) * torque_out;
+		torque_out = data->filtered_target_torque;
 	} else {
-		data->filtered_target_torque = data->target_torque;
+		data->filtered_target_torque = torque_out;
 	}
+
+	return torque_out;
 }
 
 static void motor_calc(const struct device *dev)
@@ -657,19 +661,20 @@ static void motor_calc(const struct device *dev)
 	     i++) {
 		if (config->common.pid_datas[i]->pid_dev == NULL) {
 torque2current:
-			apply_friction_compensation(config, data);
-			if (data->target_torque > data->common.torque_limit[1]) {
-				data->target_torque = data->common.torque_limit[1];
-			} else if (data->target_torque < data->common.torque_limit[0]) {
-				data->target_torque = data->common.torque_limit[0];
+			float torque_out = apply_friction_compensation(config, data);
+			if (torque_out > data->common.torque_limit[1]) {
+				torque_out = data->common.torque_limit[1];
+			} else if (torque_out < data->common.torque_limit[0]) {
+				torque_out = data->common.torque_limit[0];
 			}
 			if (!config->is_dm_motor) {
-				data->target_current = data->target_torque / config->gear_ratio *
+				data->target_current = torque_out / config->gear_ratio *
 						       convert[data->convert_num][TORQUE2CURRENT];
 			} else {
-				data->target_current = data->target_torque * 16384.0f /
-						       (config->dm_torque_ratio * config->dm_i_max *
-							config->gear_ratio);
+				data->target_current =
+					torque_out * 16384.0f /
+					(config->dm_torque_ratio * config->dm_i_max *
+					 config->gear_ratio);
 			}
 			break;
 		}
