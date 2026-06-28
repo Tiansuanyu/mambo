@@ -11,9 +11,21 @@ config ARES_USB_BULK_LOG_LEVEL
 	  0=OFF, 1=ERR, 2=WRN, 3=INF, 4=DBG
 
 config ARES_USB_THREAD_STACK_SIZE
-    int "Stack size for ARES USB processing thread"
-    default 1024
-    help
-      Specifies the stack size for the thread that processes incoming USB data.
+	int "Stack size for ARES USB processing thread"
+	default 1024
+	help
+	  Specifies the stack size for the thread that processes incoming USB data.
+
+config ARES_USB_VID
+	hex "ARES USB vendor ID"
+	default 0x1209
+	help
+	  USB vendor ID used by the ARES bulk interface device descriptor.
+
+config ARES_USB_PID
+	hex "ARES USB product ID"
+	default 0x0001
+	help
+	  USB product ID used by the ARES bulk interface device descriptor.
 
 endmenu # ARES Custom USB Application

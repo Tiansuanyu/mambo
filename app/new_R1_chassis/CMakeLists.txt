@@ -11,6 +11,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dts)
 target_sources(app PRIVATE
     src/main.c
     src/homing.c
+    src/usb_control.c
+    src/module_chassis.c
 )
 target_include_directories(app PRIVATE ${ZEPHYR_BASE}/include)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

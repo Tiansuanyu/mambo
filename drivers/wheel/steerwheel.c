@@ -223,9 +223,8 @@ static inline int steerwheel_set_static(const struct device *dev, float angle)
             }
         }
     }
-    motor_control(cfg->wheel_motor, SET_ZERO);
     motor_set_angle(cfg->steer_motor, data->target.angle);
-    return motor_set_angle(cfg->wheel_motor, 0);
+    return motor_set_speed(cfg->wheel_motor, 0.0f);
 }
 
 static inline wheel_status_t *steerwheel_get_speed(const struct device *dev)

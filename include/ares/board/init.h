@@ -7,4 +7,6 @@
 
 struct led_rgb;
 
+int board_init(void);
+
 #endif /* INIT_H */

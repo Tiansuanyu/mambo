@@ -66,9 +66,9 @@ struct dm_motor_data {
 	float target_radps;
 	float target_torque;
 
-	int16_t RAWangle;
-	int16_t RAWrpm;
-	int16_t RAWtorque;
+	uint16_t RAWangle;
+	uint16_t RAWrpm;
+	uint16_t RAWtorque;
 
 	struct pid_config params;
 
@@ -129,9 +129,9 @@ K_TIMER_DEFINE(dm_tx_timer, dm_tx_isr_handler, NULL);
 	static struct dm_motor_data dm_motor_data_##inst = {                                       \
 		.common = MOTOR_DT_DRIVER_DATA_INST_GET(inst),                                     \
 		.tx_offset = 0,                                                                    \
-		.online = true,                                                                    \
-		.enable = true,                                                                    \
-		.enabled = true,                                                                   \
+		.online = false,                                                                   \
+		.enable = false,                                                                   \
+		.enabled = false,                                                                  \
 		.prev_recv_time = 0,                                                               \
 		.err = 0,                                                                          \
 		.delta_deg_sum = 0,                                                                \

@@ -19,8 +19,6 @@
 
 #define DT_DRV_COMPAT dm_motor
 
-LOG_MODULE_REGISTER(motor_dm, CONFIG_MOTOR_LOG_LEVEL);
-
 /**
  * @brief Converts an unsigned integer to a float, given range and number of bits.
  *
@@ -34,7 +32,7 @@ LOG_MODULE_REGISTER(motor_dm, CONFIG_MOTOR_LOG_LEVEL);
  * @return The corresponding float value within the range [x_min, x_max].
  */
 
-static inline float uint_to_float(int x_int, float x_min, float x_max, int bits)
+static inline float uint_to_float(uint32_t x_int, float x_min, float x_max, int bits)
 {
 	/// converts unsigned int to float, given range and number of bits ///
 	float span = x_max - x_min;
@@ -58,6 +56,12 @@ static inline float uint_to_float(int x_int, float x_min, float x_max, int bits)
 static inline int float_to_uint(float x, float x_min, float x_max, int bits)
 {
 	/// Converts a float to an unsigned int, given range and number of bits
+	if (x > x_max) {
+		x = x_max;
+	} else if (x < x_min) {
+		x = x_min;
+	}
+
 	float span = x_max - x_min;
 	float offset = x_min;
 	return (int)((x - offset) * ((float)((1 << bits) - 1)) / span);
@@ -86,36 +90,38 @@ void dm_control(const struct device *dev, enum motor_cmd cmd)
 	struct dm_motor_data *data = dev->data;
 	const struct dm_motor_config *cfg = dev->config;
 
-	struct can_frame frame;
-	frame.id = cfg->common.tx_id + data->tx_offset;
+	struct can_frame frame = {0};
+	frame.id = cfg->common.tx_id;
 	frame.flags = 0;
 	frame.dlc = 8;
 
-	int err = 0;
+	bool send = true;
 
 	switch (cmd) {
 	case ENABLE_MOTOR:
 		memcpy(frame.data, enable_frame, 8);
-		can_send_queued(cfg->common.phy, &frame);
 		data->enable = true;
 		break;
 	case DISABLE_MOTOR:
 		memcpy(frame.data, disable_frame, 8);
-		can_send_queued(cfg->common.phy, &frame);
 		data->enable = false;
+		data->enabled = false;
 		break;
 	case SET_ZERO:
 		memcpy(frame.data, set_zero_frame, 8);
+		data->delta_deg_sum = 0.0f;
+		data->common.angle = 0.0f;
 		break;
 	case CLEAR_PID:
 		memset(&data->params, 0, sizeof(data->params));
+		send = false;
 		break;
 	case CLEAR_ERROR:
 		memcpy(frame.data, clear_error_frame, 8);
 		break;
 	}
-	if (err != 0) {
-		LOG_ERR("Failed to send CAN frame: %d", err);
+	if (send) {
+		can_send_queued(cfg->common.phy, &frame);
 	}
 }
 
@@ -127,11 +133,12 @@ static void dm_motor_pack(const struct device *dev, struct can_frame *frame)
 	struct dm_motor_data *data = dev->data;
 	const struct dm_motor_config *cfg = dev->config;
 
+	memset(frame, 0, sizeof(*frame));
 	frame->id = cfg->common.tx_id + data->tx_offset;
-	frame->dlc = 8;
 	frame->flags = 0;
 	switch (data->common.mode) {
 	case MIT:
+		frame->dlc = 8;
 		pos_tmp = float_to_uint(data->target_angle, -cfg->p_max, cfg->p_max, 16);
 		vel_tmp = float_to_uint(data->target_radps, -cfg->v_max, cfg->v_max, 12);
 		tor_tmp = float_to_uint(data->target_torque, -cfg->t_max, cfg->t_max, 12);
@@ -148,6 +155,7 @@ static void dm_motor_pack(const struct device *dev, struct can_frame *frame)
 		frame->data[7] = tor_tmp;
 		break;
 	case PV:
+		frame->dlc = 8;
 		pbuf = (uint8_t *)&data->target_angle;
 		vbuf = (uint8_t *)&data->target_radps;
 
@@ -155,6 +163,7 @@ static void dm_motor_pack(const struct device *dev, struct can_frame *frame)
 		memcpy(frame->data + 4, vbuf, 4);
 		break;
 	case VO:
+		frame->dlc = 4;
 		vbuf = (uint8_t *)&data->target_radps;
 
 		memcpy(frame->data, vbuf, 4);
@@ -193,19 +202,28 @@ static void dm_rx_handler(const struct device *can_dev, struct can_frame *frame,
 {
 	const struct device *dev = user_data;
 	struct dm_motor_data *data = dev->data;
+	const struct dm_motor_config *cfg = dev->config;
+
+	if (frame->dlc < 6) {
+		return;
+	}
+
+	uint8_t feedback_id = frame->data[0] & 0x0F;
+	uint8_t expected_id = cfg->common.tx_id & 0x0F;
+
+	if (feedback_id != expected_id) {
+		return;
+	}
 
 	data->prev_recv_time = k_uptime_get();
 
 	data->err = frame->data[0] >> 4;
-	data->enabled = data->err & 1;
-	data->RAWangle = (frame->data[1] << 8) | (frame->data[2]);
-	data->RAWrpm = (frame->data[3] << 4) | (frame->data[4] >> 4);
-	data->RAWtorque = (frame->data[4] & 0xF) << 8;
+	data->enabled = data->err == 1;
+	data->RAWangle = ((uint16_t)frame->data[1] << 8) | frame->data[2];
+	data->RAWrpm = ((uint16_t)frame->data[3] << 4) | (frame->data[4] >> 4);
+	data->RAWtorque = (((uint16_t)frame->data[4] & 0x0F) << 8) | frame->data[5];
 	data->update = true;
 
-	if (data->enable && !data->online) {
-		// LOG_ERR("motor %s is back online", dev->name);
-	}
 	data->online = true;
 
 	k_work_submit_to_queue(&dm_work_queue, &dm_rx_data_handle);
@@ -274,13 +292,13 @@ void dm_motor_set_mode(const struct device *dev, enum motor_mode mode)
 
 			data->common.mode = mode;
 			data->params.k_p = params.k_p;
+			data->params.k_i = params.k_i;
 			data->params.k_d = params.k_d;
 			found = true;
 			break;
 		}
 	}
 	if (!found) {
-		LOG_ERR("Mode %s not found", mode_str);
 		if (mode != VO && mode != HYBRID) {
 			dm_control(dev, DISABLE_MOTOR);
 			data->enable = false;
@@ -295,7 +313,6 @@ void dm_motor_set_mode(const struct device *dev, enum motor_mode mode)
 		conv.f = data->params.k_i;
 		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x1A, conv.u);
 	} else if (mode == PV) {
-		LOG_ERR("PV mode params setting not supported");
 	}
 }
 
@@ -396,7 +413,7 @@ void dm_tx_data_handler(struct k_work *work)
 				dm_control(motor_devices[i], CLEAR_ERROR);
 			}
 		}
-		if (now - data->last_tx_time >= 1000 / cfg->freq) {
+		if (data->enable && now - data->last_tx_time >= 1000 / cfg->freq) {
 			dm_motor_pack(motor_devices[i], &tx_frame);
 			can_send_queued(cfg->common.phy, &tx_frame);
 			data->last_tx_time = now;
@@ -404,8 +421,6 @@ void dm_tx_data_handler(struct k_work *work)
 		}
 		if (now - data->prev_recv_time > 10000 / cfg->freq && data->online &&
 		    data->enable) {
-			// LOG_ERR("motor %s is not responding, setting it to offline",
-			// 	motor_devices[i]->name);
 			data->online = false;
 			data->enabled = false;
 		}
@@ -416,7 +431,6 @@ void dm_tx_data_handler(struct k_work *work)
 void dm_init_handler(struct k_work *work)
 {
 	k_timer_stop(&dm_tx_timer);
-	LOG_DBG("DM motor control thread started");
 
 	for (int i = 0; i < MOTOR_COUNT; i++) {
 		struct dm_motor_data *data = motor_devices[i]->data;
@@ -431,17 +445,10 @@ void dm_init_handler(struct k_work *work)
 		int err = can_add_rx_filter(cfg->common.phy, dm_rx_handler,
 					    (void *)motor_devices[i], &data->filter);
 		if (err < 0) {
-			LOG_ERR("Error adding CAN filter (err %d)", err);
 		}
 	}
 
 	k_sleep(K_MSEC(500));
-
-	for (int i = 0; i < MOTOR_COUNT; i++) {
-		dm_control(motor_devices[i], ENABLE_MOTOR);
-		struct dm_motor_data *data = motor_devices[i]->data;
-		data->prev_recv_time = k_uptime_get();
-	}
 
 	k_timer_start(&dm_tx_timer, K_NO_WAIT, K_MSEC(9));
 	k_timer_user_data_set(&dm_tx_timer, &dm_tx_data_handle);

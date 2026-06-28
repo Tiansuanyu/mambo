@@ -44,7 +44,7 @@
             steer-motor = <&motor_steer1>;
             wheel-motor = <&motor_wheel1>;
             wheel-radius = "0.052";
-            angle-offset = "0";
+            angle-offset = "180";
         };
 
         steerwheel3: steerwheel3 {
@@ -111,7 +111,7 @@
 			v_max = "376.99";
 			status = "okay";
 			can_channel = <&can2>;
-			controllers = <&vo>;
+			controllers = <&vo_wheel1>;
 			capabilities = "vo";
 			t_max = "5";
 			freq = <200>;
@@ -125,7 +125,7 @@
 			v_max = "376.99";
 			status = "okay";
 			can_channel = <&can2>;
-			controllers = <&vo>;
+			controllers = <&vo_wheel2>;
 			capabilities = "vo";
 			t_max = "5";
 			freq = <200>;
@@ -139,7 +139,7 @@
 			v_max = "376.99";
 			status = "okay";
 			can_channel = <&can2>;
-			controllers = <&vo>;
+			controllers = <&vo_wheel3>;
 			capabilities = "vo";
 			t_max = "5";
             freq = <200>;
@@ -147,9 +147,19 @@
     };
 
     pid {
-        vo: vo {
+        vo_wheel1: vo_wheel1 {
             compatible = "pid,single";
-            k_p = "0.04";
+            k_p = "0.008";
+        };
+
+        vo_wheel2: vo_wheel2 {
+            compatible = "pid,single";
+            k_p = "0.006";
+        };
+
+        vo_wheel3: vo_wheel3 {
+            compatible = "pid,single";
+            k_p = "0.008";
         };
 
 		steer_speed_pid: steer_speed_pid {
