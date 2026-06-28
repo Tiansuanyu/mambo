@@ -88,6 +88,7 @@ struct dji_motor_data {
 	float target_rpm;
 	float target_torque;
 	float target_current;
+	float filtered_target_torque;
 	bool calculated;
 	bool new_data;
 };
@@ -106,6 +107,10 @@ struct dji_motor_config {
 
 	bool minor_arc;
 	bool inverse;
+	float friction_ff_pos;
+	float friction_ff_neg;
+	float friction_ff_deadband_rpm;
+	float torque_lpf;
 };
 
 // 全局变量声明

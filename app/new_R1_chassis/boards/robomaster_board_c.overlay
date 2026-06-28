@@ -71,6 +71,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
+            friction-ff-pos = "0.08";
+            friction-ff-neg = "-0.08";
+            friction-ff-deadband-rpm = "8.0";
+            torque-lpf = "0.35";
         };
 
         motor_steer1: motor_steer1{
@@ -85,6 +89,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
+            friction-ff-pos = "0.08";
+            friction-ff-neg = "-0.08";
+            friction-ff-deadband-rpm = "8.0";
+            torque-lpf = "0.35";
         };
 
         motor_steer2: motor_steer2{
@@ -99,6 +107,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
+            friction-ff-pos = "0.08";
+            friction-ff-neg = "-0.08";
+            friction-ff-deadband-rpm = "8.0";
+            torque-lpf = "0.35";
         };
     };
 

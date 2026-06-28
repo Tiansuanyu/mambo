@@ -78,6 +78,7 @@
 		.angle_offset = 0,                                                                 \
 		.pid_angle_input = 0,                                                              \
 		.pid_ref_input = 0,                                                                \
+		.filtered_target_torque = 0,                                                       \
 	};
 
 #define CONFIG_GET_FOLLOW(node) DT_PHANDLE(node, follow)
@@ -95,6 +96,11 @@
 		.minor_arc = DT_PROP(node, minor_arc),                                             \
 		.inverse = DT_PROP(node, inverse),                                                 \
 		.follow = DEVICE_DT_GET_OR_NULL(CONFIG_GET_FOLLOW(node)),                          \
+		.friction_ff_pos = DT_STRING_UNQUOTED_OR(node, friction_ff_pos, 0.0f),             \
+		.friction_ff_neg = DT_STRING_UNQUOTED_OR(node, friction_ff_neg, 0.0f),             \
+		.friction_ff_deadband_rpm =                                                        \
+			DT_STRING_UNQUOTED_OR(node, friction_ff_deadband_rpm, 1.0f),               \
+		.torque_lpf = DT_STRING_UNQUOTED_OR(node, torque_lpf, 0.0f),                       \
 	};
 
 #define DMOTOR_DATA_INST(inst)   DMOTOR_DATA(inst, DT_DRV_INST(inst), DT_MOTOR_NAME_INST(inst))

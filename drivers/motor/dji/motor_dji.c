@@ -563,6 +563,48 @@ static void dji_timeout_handle(const struct device *dev, uint32_t curr_time)
 	}
 }
 
+static float smooth_sign(float value, float deadband)
+{
+	if (deadband <= 0.0f) {
+		return value > 0.0f ? 1.0f : value < 0.0f ? -1.0f : 0.0f;
+	}
+
+	if (value > deadband) {
+		return 1.0f;
+	}
+	if (value < -deadband) {
+		return -1.0f;
+	}
+	return value / deadband;
+}
+
+static void apply_friction_compensation(const struct dji_motor_config *config,
+					struct dji_motor_data *data)
+{
+	if (config->friction_ff_pos == 0.0f && config->friction_ff_neg == 0.0f &&
+	    config->torque_lpf == 0.0f) {
+		data->filtered_target_torque = data->target_torque;
+		return;
+	}
+
+	float sign = smooth_sign(data->target_rpm, config->friction_ff_deadband_rpm);
+
+	if (sign > 0.0f) {
+		data->target_torque += config->friction_ff_pos * sign;
+	} else if (sign < 0.0f) {
+		data->target_torque += config->friction_ff_neg * (-sign);
+	}
+
+	if (config->torque_lpf > 0.0f && config->torque_lpf < 1.0f) {
+		data->filtered_target_torque =
+			config->torque_lpf * data->filtered_target_torque +
+			(1.0f - config->torque_lpf) * data->target_torque;
+		data->target_torque = data->filtered_target_torque;
+	} else {
+		data->filtered_target_torque = data->target_torque;
+	}
+}
+
 static void motor_calc(const struct device *dev)
 {
 	struct dji_motor_data *data = dev->data;
@@ -615,6 +657,7 @@ static void motor_calc(const struct device *dev)
 	     i++) {
 		if (config->common.pid_datas[i]->pid_dev == NULL) {
 torque2current:
+			apply_friction_compensation(config, data);
 			if (data->target_torque > data->common.torque_limit[1]) {
 				data->target_torque = data->common.torque_limit[1];
 			} else if (data->target_torque < data->common.torque_limit[0]) {
