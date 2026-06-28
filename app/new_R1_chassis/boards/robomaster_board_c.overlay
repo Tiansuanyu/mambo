@@ -71,10 +71,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
-            friction-ff-pos = "0.08";
-            friction-ff-neg = "-0.08";
-            friction-ff-deadband-rpm = "8.0";
-            torque-lpf = "0.35";
+            friction-ff-pos = "0.0";
+            friction-ff-neg = "0.0";
+            friction-ff-deadband-rpm = "5.0";
+            torque-lpf = "0.0";
         };
 
         motor_steer1: motor_steer1{
@@ -89,10 +89,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
-            friction-ff-pos = "0.08";
-            friction-ff-neg = "-0.08";
-            friction-ff-deadband-rpm = "8.0";
-            torque-lpf = "0.35";
+            friction-ff-pos = "0.0";
+            friction-ff-neg = "0.0";
+            friction-ff-deadband-rpm = "5.0";
+            torque-lpf = "0.0";
         };
 
         motor_steer2: motor_steer2{
@@ -107,10 +107,10 @@
             can_channel = <&can1>;
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
-            friction-ff-pos = "0.08";
-            friction-ff-neg = "-0.08";
-            friction-ff-deadband-rpm = "8.0";
-            torque-lpf = "0.35";
+            friction-ff-pos = "0.0";
+            friction-ff-neg = "0.0";
+            friction-ff-deadband-rpm = "5.0";
+            torque-lpf = "0.0";
         };
     };
 
@@ -179,7 +179,7 @@
             #controller-cells = <0>;
             k_p = "0.08";
             k_d = "0.0";
-            k_i = "7000";
+            k_i = "0.0";
             i_max = "5.0";
             detri_lpf = "0.95";
             out_max = "4";

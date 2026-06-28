@@ -29,6 +29,8 @@
 
 LOG_MODULE_REGISTER(motor_dji, CONFIG_MOTOR_LOG_LEVEL);
 
+#define DJI_FRICTION_TUNE_LOG_PERIOD_MS 250
+
 const struct device *motor_devices[] = {DT_INST_FOREACH_STATUS_OKAY(DJI_DEVICE_POINTER)};
 
 #define CTRL_STRUCT_DATA(i, _)                                                                     \
@@ -609,6 +611,31 @@ static float apply_friction_compensation(const struct dji_motor_config *config,
 	return torque_out;
 }
 
+static void dji_friction_tune_log(const struct device *dev, float torque_out)
+{
+	const struct dji_motor_config *config = dev->config;
+	struct dji_motor_data *data = dev->data;
+	static uint32_t last_log_ms[DJI_MOTOR_COUNT];
+	uint16_t id = motor_id(dev);
+	uint32_t now = k_uptime_get_32();
+	float ff_sign;
+
+	if (!config->is_m3508 || id >= DJI_MOTOR_COUNT ||
+	    now - last_log_ms[id] < DJI_FRICTION_TUNE_LOG_PERIOD_MS) {
+		return;
+	}
+
+	ff_sign = smooth_sign(data->target_rpm, config->friction_ff_deadband_rpm);
+
+	last_log_ms[id] = now;
+	LOG_INF("ff tune %s: target=%.3f out=%.3f target_rpm=%.1f rpm=%.1f curr_torque=%.3f sign=%.2f ff+=%.3f ff-=%.3f db=%.1f lpf=%.2f",
+		dev->name, (double)data->target_torque, (double)torque_out,
+		(double)data->target_rpm, (double)data->common.rpm,
+		(double)data->common.torque, (double)ff_sign,
+		(double)config->friction_ff_pos, (double)config->friction_ff_neg,
+		(double)config->friction_ff_deadband_rpm, (double)config->torque_lpf);
+}
+
 static void motor_calc(const struct device *dev)
 {
 	struct dji_motor_data *data = dev->data;
@@ -667,6 +694,7 @@ torque2current:
 			} else if (torque_out < data->common.torque_limit[0]) {
 				torque_out = data->common.torque_limit[0];
 			}
+			dji_friction_tune_log(dev, torque_out);
 			if (!config->is_dm_motor) {
 				data->target_current = torque_out / config->gear_ratio *
 						       convert[data->convert_num][TORQUE2CURRENT];
