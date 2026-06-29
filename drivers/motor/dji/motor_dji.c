@@ -178,6 +178,7 @@ int dji_set_mode(const struct device *dev, enum motor_mode mode)
 {
 	struct dji_motor_data *data = dev->data;
 	const struct dji_motor_config *cfg = dev->config;
+	bool mode_changed = data->common.mode != mode;
 
 	char mode_str[10];
 	switch (mode) {
@@ -212,6 +213,10 @@ int dji_set_mode(const struct device *dev, enum motor_mode mode)
 	if (data->current_mode_index == -1) {
 		LOG_ERR("No motor mode found for %s", mode_str);
 		return -ENOSYS;
+	}
+
+	if (mode_changed) {
+		data->filtered_target_torque = 0.0f;
 	}
 
 	data->common.mode = mode;
@@ -584,6 +589,11 @@ static float apply_friction_compensation(const struct dji_motor_config *config,
 					 struct dji_motor_data *data)
 {
 	float torque_out = data->target_torque;
+
+	if (data->common.mode != ML_ANGLE) {
+		data->filtered_target_torque = torque_out;
+		return torque_out;
+	}
 
 	if (config->friction_ff_pos == 0.0f && config->friction_ff_neg == 0.0f &&
 	    config->torque_lpf == 0.0f && config->torque_slew_per_cycle == 0.0f) {
