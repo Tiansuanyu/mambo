@@ -1,0 +1,49 @@
+/ {
+    limit_switches {
+        compatible = "gpio-keys";
+        limit_0: limit_0 {
+            gpios = <&gpioe 9 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "Steer Limit 0 (PE9)";
+        };
+    };
+
+    rm_motor {
+        motor_steer0: motor_steer0 {
+            compatible = "dji,motor";
+            is_m3508;
+            minor_arc; 
+            id = <1>;
+            rx_id = <0x201>;
+            tx_id = <0x200>;
+            gear_ratio = "10.17647"; // 173 / 17
+            status = "okay";
+            can_channel = <&can1>;
+            controllers = <&steer_angle_pid &steer_speed_pid>;
+            capabilities = "angle", "speed";
+        };
+    };
+
+    pid {
+        /* 3508 速度环 */
+        steer_speed_pid: steer_speed_pid {
+            #controller-cells = <0>;
+			compatible = "pid,single";
+			k_p = "0.12";
+			k_d = "0.2";
+			detri_lpf = "0.85";
+			out_max = "4";
+        };
+
+        /* 3508 角度环 */
+        steer_angle_pid: steer_angle_pid {
+            #controller-cells = <0>;
+			compatible = "pid,single";
+			k_p = "3.7";
+			detri_lpf = "0.85";
+        };
+    };
+};
+
+&can2 {
+    status = "disabled";
+};
