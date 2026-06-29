@@ -28,7 +28,7 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 #define CONTROL_POLL_TIMEOUT_MS 200
 #define DM_INIT_STEP_DELAY_MS 100
-#define FRICTION_TUNE_ENABLED 1
+#define FRICTION_TUNE_ENABLED 0
 #define FRICTION_TUNE_TORQUE_START 0.02f
 #define FRICTION_TUNE_COARSE_STEP 0.04f
 #define FRICTION_TUNE_FINE_STEP 0.01f
@@ -51,16 +51,19 @@ static const struct device *wheel_motors[] = {
 	DEVICE_DT_GET(WHEELMOTOR3_NODE),
 };
 
+#if FRICTION_TUNE_ENABLED
 static const struct device *steer_motors[] = {
 	DEVICE_DT_GET(STEERMOTOR1_NODE),
 	DEVICE_DT_GET(STEERMOTOR2_NODE),
 	DEVICE_DT_GET(STEERMOTOR3_NODE),
 };
+#endif
 
 static bool chassis_ready;
 
 extern const k_tid_t chassis_thread;
 
+#if FRICTION_TUNE_ENABLED
 struct friction_tune_measure {
 	float max_abs_rpm;
 	float avg_abs_rpm;
@@ -72,6 +75,7 @@ struct friction_tune_result {
 	bool first_found;
 	bool stable_found;
 };
+#endif
 
 static int init_wheel_motors(void)
 {
@@ -94,6 +98,7 @@ static int init_wheel_motors(void)
 	return 0;
 }
 
+#if FRICTION_TUNE_ENABLED
 static struct friction_tune_measure friction_tune_apply_torque(const struct device *motor,
 							       float torque, int hold_ms)
 {
@@ -321,6 +326,7 @@ static void friction_tune_steer_motors(void)
 		friction_tune_steer_direction(steer_motors[i], i, -1.0f);
 	}
 }
+#endif
 
 void console_feedback(void *arg1, void *arg2, void *arg3)
 {
