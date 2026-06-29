@@ -72,9 +72,10 @@
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
             friction-ff-pos = "0.09";
-            friction-ff-neg = "-0.11";
+            friction-ff-neg = "0.11";
             friction-ff-deadband-rpm = "3.0";
-            torque-lpf = "0.35";
+            torque-lpf = "0.0";
+            torque-slew-per-cycle = "0.01";
         };
 
         motor_steer1: motor_steer1{
@@ -90,9 +91,10 @@
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
             friction-ff-pos = "0.13";
-            friction-ff-neg = "-0.14";
+            friction-ff-neg = "0.14";
             friction-ff-deadband-rpm = "3.0";
-            torque-lpf = "0.35";
+            torque-lpf = "0.0";
+            torque-slew-per-cycle = "0.01";
         };
 
         motor_steer2: motor_steer2{
@@ -108,9 +110,10 @@
             controllers = <&steer_angle_pid &steer_speed_pid>;
             capabilities = "angle", "speed";
             friction-ff-pos = "0.13";
-            friction-ff-neg = "-0.13";
+            friction-ff-neg = "0.13";
             friction-ff-deadband-rpm = "3.0";
-            torque-lpf = "0.35";
+            torque-lpf = "0.0";
+            torque-slew-per-cycle = "0.01";
         };
     };
 

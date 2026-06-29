@@ -111,6 +111,7 @@ struct dji_motor_config {
 	float friction_ff_neg;
 	float friction_ff_deadband_rpm;
 	float torque_lpf;
+	float torque_slew_per_cycle;
 };
 
 // 全局变量声明

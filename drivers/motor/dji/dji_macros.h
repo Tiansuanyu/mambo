@@ -101,6 +101,8 @@
 		.friction_ff_deadband_rpm =                                                        \
 			DT_STRING_UNQUOTED_OR(node, friction_ff_deadband_rpm, 1.0f),               \
 		.torque_lpf = DT_STRING_UNQUOTED_OR(node, torque_lpf, 0.0f),                       \
+		.torque_slew_per_cycle =                                                           \
+			DT_STRING_UNQUOTED_OR(node, torque_slew_per_cycle, 0.0f),                  \
 	};
 
 #define DMOTOR_DATA_INST(inst)   DMOTOR_DATA(inst, DT_DRV_INST(inst), DT_MOTOR_NAME_INST(inst))

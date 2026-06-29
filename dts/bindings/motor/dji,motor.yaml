@@ -69,3 +69,6 @@ properties:
   torque-lpf:
     type: string
     required: false
+  torque-slew-per-cycle:
+    type: string
+    required: false

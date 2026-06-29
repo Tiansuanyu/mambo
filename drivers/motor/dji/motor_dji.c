@@ -586,7 +586,7 @@ static float apply_friction_compensation(const struct dji_motor_config *config,
 	float torque_out = data->target_torque;
 
 	if (config->friction_ff_pos == 0.0f && config->friction_ff_neg == 0.0f &&
-	    config->torque_lpf == 0.0f) {
+	    config->torque_lpf == 0.0f && config->torque_slew_per_cycle == 0.0f) {
 		data->filtered_target_torque = torque_out;
 		return torque_out;
 	}
@@ -596,7 +596,18 @@ static float apply_friction_compensation(const struct dji_motor_config *config,
 	if (sign > 0.0f) {
 		torque_out += config->friction_ff_pos * sign;
 	} else if (sign < 0.0f) {
-		torque_out += config->friction_ff_neg * (-sign);
+		torque_out -= config->friction_ff_neg * (-sign);
+	}
+
+	if (config->torque_slew_per_cycle > 0.0f) {
+		float delta = torque_out - data->filtered_target_torque;
+
+		if (delta > config->torque_slew_per_cycle) {
+			delta = config->torque_slew_per_cycle;
+		} else if (delta < -config->torque_slew_per_cycle) {
+			delta = -config->torque_slew_per_cycle;
+		}
+		torque_out = data->filtered_target_torque + delta;
 	}
 
 	if (config->torque_lpf > 0.0f && config->torque_lpf < 1.0f) {
@@ -628,12 +639,13 @@ static void dji_friction_tune_log(const struct device *dev, float torque_out)
 	ff_sign = smooth_sign(data->target_rpm, config->friction_ff_deadband_rpm);
 
 	last_log_ms[id] = now;
-	LOG_INF("ff tune %s: target=%.3f out=%.3f target_rpm=%.1f rpm=%.1f curr_torque=%.3f sign=%.2f ff+=%.3f ff-=%.3f db=%.1f lpf=%.2f",
+	LOG_INF("ff tune %s: target=%.3f out=%.3f target_rpm=%.1f rpm=%.1f curr_torque=%.3f sign=%.2f ff+=%.3f ff-=%.3f db=%.1f lpf=%.2f slew=%.3f",
 		dev->name, (double)data->target_torque, (double)torque_out,
 		(double)data->target_rpm, (double)data->common.rpm,
 		(double)data->common.torque, (double)ff_sign,
 		(double)config->friction_ff_pos, (double)config->friction_ff_neg,
-		(double)config->friction_ff_deadband_rpm, (double)config->torque_lpf);
+		(double)config->friction_ff_deadband_rpm, (double)config->torque_lpf,
+		(double)config->torque_slew_per_cycle);
 }
 
 static void motor_calc(const struct device *dev)
