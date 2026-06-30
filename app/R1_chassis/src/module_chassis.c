@@ -27,11 +27,11 @@ static float finite_or_zero(float value)
 	return value;
 }
 
-static void chassis_stop_static(void)
+static void chassis_stop_zero(void)
 {
 	chassis_set_speed(chassis_dev, 0.0f, 0.0f);
 	chassis_set_gyro(chassis_dev, 0.0f);
-	chassis_set_static(chassis_dev, true);
+	chassis_set_static(chassis_dev, false);
 }
 
 void module_chassis_update(const struct team_usb_packet *packet, bool updated)
@@ -40,7 +40,7 @@ void module_chassis_update(const struct team_usb_packet *packet, bool updated)
 	static bool gear_switch_armed = true;
 
 	if (!updated || packet == NULL) {
-		chassis_stop_static();
+		chassis_stop_zero();
 		return;
 	}
 
@@ -74,7 +74,7 @@ void module_chassis_update(const struct team_usb_packet *packet, bool updated)
 	}
 
 	if (x == 0.0f && y == 0.0f && angvel == 0.0f) {
-		chassis_stop_static();
+		chassis_stop_zero();
 		return;
 	}
 
