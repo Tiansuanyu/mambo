@@ -2,9 +2,9 @@
     chassis: chassis {
         compatible = "ares,chassis";
         status = "okay";
-        wheels = <&steerwheel1 (-405)  (-180)>,  /* Wheel 1 */
-                 <&steerwheel2   405   (-180)>,  /* Wheel 2 */
-                 <&steerwheel3     0     360 >;  /* Wheel 3 */
+        wheels = <&steerwheel1 (-405)    180>,  /* 右前 */
+                 <&steerwheel2   405     180>,  /* 左前 */
+                 <&steerwheel3     0  (-360)>;  /* 中后 */
         angle-pid = <&chassis_roll_angle_pid>;
         max_linear_accel = "6.4";
         max_gyro = "20";
@@ -18,7 +18,7 @@
             steer-motor = <&motor_steer0>;
             wheel-motor = <&motor_wheel0>;
             wheel-radius = "0.0555";
-            angle-offset = "175";
+            angle-offset = "300";
         };
 
         steerwheel2: steerwheel2 {
@@ -28,7 +28,7 @@
             steer-motor = <&motor_steer1>;
             wheel-motor = <&motor_wheel1>;
             wheel-radius = "0.0555";
-            angle-offset = "323";
+            angle-offset = "120";
         };
 
         steerwheel3: steerwheel3 {
@@ -38,7 +38,7 @@
             steer-motor = <&motor_steer2>;
             wheel-motor = <&motor_wheel2>;
             wheel-radius = "0.0555";
-            angle-offset = "55";
+            angle-offset = "240";
         };
     };
 
