@@ -11,7 +11,7 @@
 LOG_MODULE_REGISTER(module_chassis, LOG_LEVEL_INF);
 
 #define STICK_DEADZONE 0.06f
-#define GEAR_SWITCH_DOWN_THRESHOLD -0.5f
+#define GEAR_SWITCH_DOWN_THRESHOLD -0.8f
 #define GEAR_SWITCH_RELEASE_THRESHOLD -0.2f
 #define HIGH_LINEAR_SPEED_SCALE 1.8f
 #define HIGH_GYRO_SPEED_SCALE 15.0f
@@ -30,10 +30,11 @@ static float finite_or_zero(float value)
 	return value;
 }
 
-static void chassis_stop_zero(void)
+static void chassis_stop_static(void)
 {
 	chassis_set_speed(chassis_dev, 0.0f, 0.0f);
 	chassis_set_gyro(chassis_dev, 0.0f);
+	chassis_set_static(chassis_dev, true);
 }
 
 void module_chassis_update(const struct team_usb_packet *packet, bool updated)
@@ -47,10 +48,10 @@ void module_chassis_update(const struct team_usb_packet *packet, bool updated)
 		int64_t now_ms = k_uptime_get();
 
 		if (now_ms - last_timeout_log_ms >= USB_RX_TIMEOUT_LOG_INTERVAL_MS) {
-			LOG_WRN("USB no packet, chassis zero speed");
+			LOG_WRN("USB no packet, chassis static");
 			last_timeout_log_ms = now_ms;
 		}
-		chassis_stop_zero();
+		chassis_stop_static();
 		return;
 	}
 
@@ -93,11 +94,11 @@ void module_chassis_update(const struct team_usb_packet *packet, bool updated)
 	}
 
 	if (x == 0.0f && y == 0.0f && angvel == 0.0f) {
-		chassis_stop_zero();
+		chassis_stop_static();
 		return;
 	}
 
 	chassis_set_static(chassis_dev, false);
-	chassis_set_speed(chassis_dev, x * linear_speed_scale, y * linear_speed_scale);
+	chassis_set_speed(chassis_dev, -x * linear_speed_scale, y * linear_speed_scale);
 	chassis_set_gyro(chassis_dev, angvel * gyro_speed_scale);
 }

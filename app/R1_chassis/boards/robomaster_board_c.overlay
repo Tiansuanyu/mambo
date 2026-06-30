@@ -2,8 +2,8 @@
     chassis: chassis {
         compatible = "ares,chassis";
         status = "okay";
-        wheels = <&steerwheel1 (-405)    180>,  /* 右前 */
-                 <&steerwheel2   405     180>,  /* 左前 */
+        wheels = <&steerwheel1   405    180>,  /* 右前 */
+                 <&steerwheel2 (-405)     180>,  /* 左前 */
                  <&steerwheel3     0  (-360)>;  /* 中后 */
         angle-pid = <&chassis_roll_angle_pid>;
         max_linear_accel = "6.4";
@@ -38,7 +38,7 @@
             steer-motor = <&motor_steer2>;
             wheel-motor = <&motor_wheel2>;
             wheel-radius = "0.0555";
-            angle-offset = "240";
+            angle-offset = "60";
         };
     };
 
@@ -129,7 +129,7 @@
         wheel_speed_pid: wheel_speed_pid {
             #controller-cells = <0>;
             compatible = "pid,single";
-            k_p = "0.10";
+            k_p = "0.12";
             k_d = "0.2";
             detri_lpf = "0.85";
             out_max = "4";
