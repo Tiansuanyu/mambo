@@ -60,7 +60,6 @@ int main(void)
 
 	chassis_set_speed(chassis, 0.0f, 0.0f);
 	chassis_set_gyro(chassis, 0.0f);
-	chassis_set_static(chassis, true);
 	chassis_set_enabled(chassis, true);
 	chassis_ready = true;
 
