@@ -129,8 +129,8 @@
         wheel_speed_pid: wheel_speed_pid {
             #controller-cells = <0>;
             compatible = "pid,single";
-            k_p = "0.12";
-            k_d = "0.2";
+            k_p = "0.08";
+            k_d = "0.12";
             detri_lpf = "0.85";
             out_max = "4";
         };
