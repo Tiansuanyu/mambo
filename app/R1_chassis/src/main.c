@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <zephyr/drivers/chassis.h>
+#include <zephyr/drivers/motor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
@@ -23,6 +24,16 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 #define CONTROL_POLL_TIMEOUT_MS 200
 
 static bool chassis_ready;
+
+static void enable_chassis_motors(void)
+{
+	motor_control(steer_motor1, ENABLE_MOTOR);
+	motor_control(steer_motor2, ENABLE_MOTOR);
+	motor_control(steer_motor3, ENABLE_MOTOR);
+	motor_control(wheel_motor1, ENABLE_MOTOR);
+	motor_control(wheel_motor2, ENABLE_MOTOR);
+	motor_control(wheel_motor3, ENABLE_MOTOR);
+}
 
 void console_feedback(void *arg1, void *arg2, void *arg3)
 {
@@ -60,6 +71,7 @@ int main(void)
 
 	chassis_set_speed(chassis, 0.0f, 0.0f);
 	chassis_set_gyro(chassis, 0.0f);
+	enable_chassis_motors();
 	chassis_set_enabled(chassis, true);
 	chassis_ready = true;
 

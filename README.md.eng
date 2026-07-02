@@ -1,5 +1,121 @@
-# Motor Drivers for Zephyr RTOS
-### I am totally against Linus's dictatorial behaviour of wiping out the Linux Maintainer on 10.23 on the basis of nationality.
-## This a project supported by various members in SUSTech ARES the robot club.
-### We are attempting to describe the robot in a device tree model.
-### This helps cut down costs processing the relationships between chassis, motor or so.
+<p align="right">
+  <a href="README.md">中文</a>
+</p>
+
+<p align="center">
+  <img src="assets/logo.svg" width="620" alt="Mambo">
+</p>
+
+<p align="center">
+  <a href="https://github.com/ttwards/mambo/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ttwards/mambo/ci.yml?branch=master&style=for-the-badge&label=CI&logo=githubactions&logoColor=white" alt="CI"></a>
+  <a href="https://opensource.org/license/mit/"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT License"></a>
+  <a href="https://github.com/ttwards/mambo/stargazers"><img src="https://img.shields.io/github/stars/ttwards/mambo?style=for-the-badge&logo=github&label=Stars" alt="Stars"></a>
+  <a href="https://github.com/ttwards/mambo/forks"><img src="https://img.shields.io/github/forks/ttwards/mambo?style=for-the-badge&logo=github&label=Forks" alt="Forks"></a>
+</p>
+
+Mambo is a Zephyr RTOS module for robot embedded-control development. It models robot hardware relationships through devicetree and provides reusable drivers, protocol libraries, board support, and sample applications.
+
+## Repository Layout
+
+- `boards/`: custom board definitions.
+- `dts/bindings/`: devicetree bindings used by drivers and libraries.
+- `drivers/`: motor, chassis, sensor, VCAN, SBUS, PID, and wheel drivers.
+- `lib/ares/`: ARES communication, protocol, IMU, and board helper libraries.
+- `samples/`: buildable example applications.
+- `template/`: starter template for new applications.
+- `Documents/`: design notes and topic-specific documentation.
+
+See `structure.png` for an overview and `example.dts` for an example robot description.
+
+## Setup
+
+Install host dependencies on Ubuntu:
+
+```shell
+sudo apt update
+sudo apt install --no-install-recommends git cmake ninja-build gperf \
+  ccache dfu-util device-tree-compiler wget \
+  python3-dev python3-pip python3-setuptools python3-tk python3-wheel \
+  xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
+```
+
+Install West and Zephyr Python dependencies in a virtual environment:
+
+```shell
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip wheel
+python3 -m pip install west
+```
+
+If you already use a managed Python environment, an equivalent venv, pipx, or system package setup is also acceptable. Avoid mixing Zephyr build dependencies into a global Python environment.
+
+## Workspace Initialization
+
+```shell
+west init -m https://github.com/ttwards/mambo --mr master my-workspace
+cd my-workspace
+west update
+west zephyr-export
+python3 -m pip install -r zephyr/scripts/requirements.txt
+west sdk install -t arm-zephyr-eabi
+```
+
+After initialization, the workspace root contains these project directories:
+
+- `mambo/`: the manifest repository.
+- `zephyr/`: the Zephyr source tree pinned by `west.yml`.
+- `modules/hal/cmsis/`
+- `modules/hal/cmsis_6/`
+- `modules/lib/cmsis-dsp/`
+- `modules/hal/st/`
+- `modules/hal/stm32/`
+- `modules/debug/segger/`
+- `bootloader/mcuboot/`
+
+`west sdk install -t arm-zephyr-eabi` installs only the GNU toolchain required by the current ARM Cortex-M targets. Install additional Zephyr SDK toolchains only when building for other architectures.
+
+## Build and Flash
+
+Build the DJI M3508 sample for Robomaster Board C:
+
+```shell
+cd mambo
+west build -b robomaster_board_c samples/motor/dji_m3508_demo
+```
+
+Flash the firmware:
+
+```shell
+west flash
+```
+
+Select a runner explicitly when needed:
+
+```shell
+west flash --runner stlink
+west flash --runner jlink
+```
+
+Additional examples:
+
+```shell
+west build -b dm_mc02 samples/motor/dm_demo
+west build -b robomaster_board_c samples/vcan/vcan_host_demo
+```
+
+## Development
+
+The repository uses pre-commit and GitHub Actions CI. Install hooks before submitting changes:
+
+```shell
+./setup-precommit.sh
+```
+
+Run checks manually:
+
+```shell
+pre-commit run --all-files
+```
+
+VS Code example settings are available in `VSC_sample_configs/`. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

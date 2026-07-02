@@ -27,6 +27,16 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 #define LOW_LINEAR_SPEED_SCALE 0.5f
 #define LOW_GYRO_SPEED_SCALE 7.5f
 
+static void enable_chassis_motors(void)
+{
+    motor_control(steer_motor1, ENABLE_MOTOR);
+    motor_control(steer_motor2, ENABLE_MOTOR);
+    motor_control(steer_motor3, ENABLE_MOTOR);
+    motor_control(wheel_motor1, ENABLE_MOTOR);
+    motor_control(wheel_motor2, ENABLE_MOTOR);
+    motor_control(wheel_motor3, ENABLE_MOTOR);
+}
+
 void console_feedback(void *arg1, void *arg2, void *arg3)
 {
     bool low_gear = true;
@@ -84,7 +94,8 @@ int main(void)
 {
     k_sleep(K_MSEC(2000));
     chassis_set_enabled(chassis, false);
-    k_sleep(K_MSEC(100)); 
+    k_sleep(K_MSEC(100));
+    enable_chassis_motors();
     chassis_set_enabled(chassis, true);
     chassis_set_gyro(chassis, 0);
 

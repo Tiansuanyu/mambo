@@ -16,8 +16,11 @@
 #include "zephyr/drivers/motor.h"
 #include "zephyr/drivers/pid.h"
 #include "zephyr/kernel.h"
+#include <zephyr/logging/log.h>
 
 #define DT_DRV_COMPAT dm_motor
+
+LOG_MODULE_REGISTER(motor_dm, CONFIG_MOTOR_LOG_LEVEL);
 
 /**
  * @brief Converts an unsigned integer to a float, given range and number of bits.
@@ -91,19 +94,26 @@ void dm_control(const struct device *dev, enum motor_cmd cmd)
 	const struct dm_motor_config *cfg = dev->config;
 
 	struct can_frame frame = {0};
-	frame.id = cfg->common.tx_id;
+	frame.id = cfg->common.tx_id + data->tx_offset;
 	frame.flags = 0;
 	frame.dlc = 8;
 
-	bool send = true;
+	int err = 0;
 
 	switch (cmd) {
 	case ENABLE_MOTOR:
-		memcpy(frame.data, enable_frame, 8);
 		data->enable = true;
+		dm_motor_set_mode(dev, data->common.mode);
+		if (!data->enable) {
+			return;
+		}
+		frame.id = cfg->common.tx_id + data->tx_offset;
+		memcpy(frame.data, enable_frame, 8);
+		err = can_send_queued(cfg->common.phy, &frame);
 		break;
 	case DISABLE_MOTOR:
 		memcpy(frame.data, disable_frame, 8);
+		err = can_send_queued(cfg->common.phy, &frame);
 		data->enable = false;
 		data->enabled = false;
 		break;
@@ -111,17 +121,18 @@ void dm_control(const struct device *dev, enum motor_cmd cmd)
 		memcpy(frame.data, set_zero_frame, 8);
 		data->delta_deg_sum = 0.0f;
 		data->common.angle = 0.0f;
+		err = can_send_queued(cfg->common.phy, &frame);
 		break;
 	case CLEAR_PID:
 		memset(&data->params, 0, sizeof(data->params));
-		send = false;
 		break;
 	case CLEAR_ERROR:
 		memcpy(frame.data, clear_error_frame, 8);
+		err = can_send_queued(cfg->common.phy, &frame);
 		break;
 	}
-	if (send) {
-		can_send_queued(cfg->common.phy, &frame);
+	if (err != 0) {
+		LOG_ERR("Failed to send CAN frame: %d", err);
 	}
 }
 
@@ -259,22 +270,30 @@ void dm_motor_set_mode(const struct device *dev, enum motor_mode mode)
 	case MIT:
 		snprintf(mode_str, sizeof(mode_str), "mit");
 		data->tx_offset = 0x0;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x01);
+		if (data->enable) {
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x01);
+		}
 		break;
 	case PV:
 		snprintf(mode_str, sizeof(mode_str), "pv");
 		data->tx_offset = 0x100;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x02);
+		if (data->enable) {
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x02);
+		}
 		break;
 	case VO:
 		snprintf(mode_str, sizeof(mode_str), "vo");
 		data->tx_offset = 0x200;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x03);
+		if (data->enable) {
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x03);
+		}
 		break;
 	case HYBRID:
 		snprintf(mode_str, sizeof(mode_str), "hybrid");
 		data->tx_offset = 0x300;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x04);
+		if (data->enable) {
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x0A, 0x04);
+		}
 		break;
 	default:
 		data->online = false;
@@ -308,10 +327,12 @@ void dm_motor_set_mode(const struct device *dev, enum motor_mode mode)
 			float f;
 			uint32_t u;
 		} conv;
-		conv.f = data->params.k_p;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x19, conv.u);
-		conv.f = data->params.k_i;
-		dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x1A, conv.u);
+		if (data->enable) {
+			conv.f = data->params.k_p;
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x19, conv.u);
+			conv.f = data->params.k_i;
+			dm_edit_reg_value(cfg->common.phy, cfg->common.tx_id, 0x1A, conv.u);
+		}
 	} else if (mode == PV) {
 	}
 }
@@ -351,6 +372,9 @@ int dm_set(const struct device *dev, motor_status_t *status)
 	}
 
 	struct can_frame tx_frame;
+	if (!data->enable || !data->enabled) {
+		return 0;
+	}
 	dm_motor_pack(dev, &tx_frame);
 	can_send_queued(cfg->common.phy, &tx_frame);
 	data->last_tx_time = k_uptime_get();
@@ -404,6 +428,9 @@ void dm_tx_data_handler(struct k_work *work)
 		struct dm_motor_data *data = motor_devices[i]->data;
 		const struct dm_motor_config *cfg = motor_devices[i]->config;
 
+		if (!data->enable) {
+			continue;
+		}
 		if ((data->online && data->enable) && data->tx_cnt >= 3) {
 			if (!data->enabled) {
 				dm_control(motor_devices[i], ENABLE_MOTOR);
@@ -413,7 +440,7 @@ void dm_tx_data_handler(struct k_work *work)
 				dm_control(motor_devices[i], CLEAR_ERROR);
 			}
 		}
-		if (data->enable && now - data->last_tx_time >= 1000 / cfg->freq) {
+		if (data->enabled && now - data->last_tx_time >= 1000 / cfg->freq) {
 			dm_motor_pack(motor_devices[i], &tx_frame);
 			can_send_queued(cfg->common.phy, &tx_frame);
 			data->last_tx_time = now;

@@ -91,8 +91,8 @@ struct rs_can_id {
 	uint32_t motor_id: 8;  // 目标ID
 	uint32_t master_id: 8; // 主机ID
 	uint32_t reserved: 8;  // 数据区
-	uint32_t msg_type: 5; // 通信类型
-	uint32_t res: 3; 
+	uint32_t msg_type: 5;  // 通信类型
+	uint32_t res: 3;
 };
 
 enum MOTOR_TYPE {
@@ -147,7 +147,7 @@ struct k_work_q rs_work_queue;
 int rs_set(const struct device *dev, motor_status_t *status);
 int rs_get(const struct device *dev, motor_status_t *status);
 void rs_motor_control(const struct device *dev, enum motor_cmd cmd);
-int rs_motor_set_mode(const struct device *dev, enum motor_mode mode);
+void rs_motor_set_mode(const struct device *dev, enum motor_mode mode);
 
 void rs_tx_isr_handler(struct k_timer *dummy);
 void rs_tx_data_handler(struct k_work *work);
@@ -169,7 +169,7 @@ K_WORK_DEFINE(rs_tx_data_handle, rs_tx_data_handler);
 
 K_TIMER_DEFINE(rs_tx_timer, rs_tx_isr_handler, NULL);
 
-#define RS_MOTOR_TYPE(inst) DT_STRING_UNQUOTED_OR(DT_DRV_INST(inst), motor_type, RS02)
+#define RS_MOTOR_TYPE(inst)          DT_STRING_UNQUOTED_OR(DT_DRV_INST(inst), motor_type, RS02)
 #define RS_MOTOR_PARAM_(type, field) type##_##field
 #define RS_MOTOR_PARAM(type, field)  RS_MOTOR_PARAM_(type, field)
 

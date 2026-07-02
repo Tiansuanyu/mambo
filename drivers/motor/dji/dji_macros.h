@@ -64,6 +64,7 @@
 		.canbus_id = 0,                                                                    \
 		.ctrl_struct = NULL,                                                               \
 		.online = false,                                                                   \
+		.enabled = false,                                                                  \
 		.convert_num = 0,                                                                  \
 		.current_mode_index = -1,                                                          \
 		.RAWangle = 0,                                                                     \
@@ -77,7 +78,8 @@
 		.missed_times = 0,                                                                 \
 		.angle_offset = 0,                                                                 \
 		.pid_angle_input = 0,                                                              \
-		.pid_ref_input = 0,                                                                \
+		.pid_count = 0,                                                                    \
+		.target_torque_ff = 0,                                                             \
 	};
 
 #define CONFIG_GET_FOLLOW(node) DT_PHANDLE(node, follow)
