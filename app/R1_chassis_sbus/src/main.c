@@ -68,12 +68,12 @@ void console_feedback(void *arg1, void *arg2, void *arg3)
 
         if (in_deadzone) {
             chassis_set_static(chassis, true);
-            chassis_set_speed(chassis, 0.0f, 0.0f); 
-            chassis_set_gyro(chassis, 0.0f); 
+            chassis_set_speed(chassis, 0.0f, 0.0f);
+            chassis_set_gyro(chassis, 0.0f);
         } else {
             chassis_set_static(chassis, false);
-            chassis_set_speed(chassis, X * linear_speed_scale, Y * linear_speed_scale); 
-            chassis_set_gyro(chassis, -angvel * gyro_speed_scale);     
+            chassis_set_speed(chassis, -X * linear_speed_scale, -Y * linear_speed_scale);
+            chassis_set_gyro(chassis, angvel * gyro_speed_scale);
         }
     }
 }
